@@ -1,0 +1,20 @@
+{
+  "host": "0.0.0.0",
+  "port": 20080,
+  "models": [
+    {
+      "model": "/llamacpp/model/vicuna-13b-v1.5.Q8_0.gguf",
+      "model_alias": "vicuna-13b",
+      "chat_format": "vicuna",
+      "n_gpu_layers": -1,
+      "n_ctx": 4096
+    },
+    {
+      "model": "/llamacpp/model/karakuri-lm-8x7b-chat-v0.1-Q6_K.gguf",
+      "model_alias": "karakuri-8x7b",
+      "chat_format": "llama-2",
+      "n_gpu_layers": -1,
+      "n_ctx": 4096
+    }
+  ]
+}

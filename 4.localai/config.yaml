@@ -1,0 +1,5 @@
+- name: sentence-luke
+  backend: sentencetransformers
+  embeddings: true
+  parameters:
+    model: /localai/model/sentence-luke

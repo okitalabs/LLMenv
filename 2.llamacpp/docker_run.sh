@@ -1,0 +1,2 @@
+#!/bin/bash
+docker run --rm -p 20080:20080 --gpus device=0 --cap-add SYS_RESOURCE -e USE_MLOCK=0 -v /home/llm/llamacpp:/llamacpp -h llamacpp --name llamacpp llamacpp python3 -m llama_cpp.server --config_file /llamacpp/config.json

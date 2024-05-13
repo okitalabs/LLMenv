@@ -1,0 +1,281 @@
+# LLM実行環境の構築
+# LocalAI
+
+<img src="https://localai.io/6492e685-8282-4217-9daa-e229a31548bc_1991716272941020335.png">
+
+LocalAIはOpenAI API互換サーバーとしてさまざまなランタイムを起動するためのDelegate APIサーバ。  ここでは、Sentence TransfomerのモデルをEmbeddings APIとして提供する。
+
+[LocalAI Documentationページ](https://localai.io/)
+
+> LLMのモデルが変わるとEmbeddingsのベクトルも変わるため、Chat CompletionのLLMとEmbeddingsは分けたほうが良い。また、GPT系よりBERT系の方がEmbeddingsの性能が高い（と言われている）。ただし、BERT系のモデルのコンテキスト長は512がほとんどのため、それ以上の長さが必要な場合は、GPT系のEmbeddingsを使う必要がある（RAGのチャンクではあまり長いとベクトルに多くの要素を含んでしまい精度が落ちるためは512以下が良いとされている）。
+
+
+## 構成情報
+### SentenveTransformerモデル
+|model名|ランタイム|対象モデル|
+|:----|:----|:----|
+|sentence-luke|SentencePeace|[sonoisa/sentence-luke-japanese-base-lite](https://huggingface.co/sonoisa/sentence-luke-japanese-base-lite) |
+
+他に以下のモデルが有名
+- [sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2](https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2)
+- [sentence-transformers/stsb-xlm-r-multilingual](https://huggingface.co/sentence-transformers/stsb-xlm-r-multilingual)
+- [intfloat/multilingual-e5-large](https://huggingface.co/intfloat/multilingual-e5-large)
+
+
+
+### Docker設定
+|Docker名|Host Port|Docker Port|Host Dir|Docker Dir|
+|:----|:----|:----|:----|:----|
+|localai|40080|40080|/home/llm/localai|/localai|
+
+
+
+<br>
+<hr>
+
+
+# 構築手順
+## LLMモデルファイルのダウンロード
+SentenceTransformer用のモデルファイルを`$HOME/localai/model/`にダウンロードしておく。
+モデルはディレクトリで構成されるため、以下のプログラムを使用してHuggingFaceからダウンロードする。
+
+### ダウンロードプログラム
+`dl_sentence-luke.py`
+```python
+from huggingface_hub import snapshot_download, login
+# login(token = "Toke ID") ## 認証が必要な場合
+
+model_name = "sonoisa/sentence-luke-japanese-base-lite" ## ダウンロードするHuggingFaceのモデル名
+save_name = "/home/llm/localai/model/sentence-luke" ## ダウンロード先のディレクトリ
+
+download_path = snapshot_download(
+    repo_id = model_name,
+    local_dir = save_name,
+    local_dir_use_symlinks=False
+)
+```
+ダウンロードの実行
+```bash
+$ mkdir $HOME/localai/model ## モデル用ディレクトリ作成
+$ cd $HOME/localai/ ## ここにdl_sentence-luke.pyを配置
+$ pip install huggingface_hub ## pythonモジュールのインストール
+$ python dl_sentence-luke.py
+```
+
+
+<hr>
+
+
+## Dockerイメージの作成
+[mudler/localai](https://github.com/mudler/LocalAI)のGitHubにある、[Dockerfile](https://github.com/mudler/LocalAI/blob/master/Dockerfile)から実行用のコンテナイメージ `localai`を作成する。
+
+```bash
+$ cd $HOME/localai 
+$ git clone https://github.com/mudler/LocalAI.git
+$ cd LocalAI
+$ docker build -t localai . ## ビルド
+```
+
+
+### Dockerイメージの確認
+```bash
+$ docker images	
+REPOSITORY                TAG           IMAGE ID       CREATED      SIZE
+localai                   latest        e48a95d81fbf   3 days ago   37GB
+```
+
+
+<hr>
+
+
+## LocalAIMサーバの起動
+### configファイルの作成
+
+以下のファイルを作成する。  
+`$HOME/localai/config.yaml`  
+```yaml
+- name: sentence-luke
+  backend: sentencetransformers
+  embeddings: true
+  parameters:
+    model: /localai/model/sentence-luke
+```
+
+設定パラメータの詳細は末尾の「参考」を参照。
+- name  
+     OpenAI APIの`model`で指定される名前。`text-davinch-003`のように指定することも出来る。
+- backend  
+    実行ランタイムの種類。
+- embeddings  
+    Embeddingsをサポートするか。  
+-parameters:  
+    - model
+        モデルファイルを指定。
+
+> 複数モデルを指定することも出来るが、一旦起動するとそのまま起動しっぱなしになるため、GPUメモリの消費が多くなる。メモリ不足にならないように。
+
+### 起動
+```bash
+$ docker run --rm -p 40080:40080 --gpus all -v /home/llm/localai:/localai -h localai --name localai localai run \
+--config-file /localai/config.yaml \
+--models-path /localai//model \
+--address="0.0.0.0:40080"
+```
+起動後、フォアグラウンドで実行。以下メッセージが出たら起動完了。  
+`CTRL+C`で終了、Dockerもコンテナも削除される(`--rm`オプション)。
+```bash
+ :
+3:53PM INF core/startup process completed!
+3:53PM INF LocalAI API is listening! Please connect to the endpoint for API documentation. endpoint=http://0.0.0.0:40080
+```
+
+
+<hr>
+
+
+## 起動後の確認
+### Embeddings
+curlで`vicuna-13b`にEmbeddingsを問い合わせてみる。
+```bash
+$ time curl http://localhost:40080/v1/embeddings \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer None" \
+-d '{
+  "model": "vicuna-13b",
+  "input": "query: 夕飯はお肉です。"
+}' | jq |less
+```
+
+
+<br>
+<hr>
+
+
+## 参考
+### リンク
+- 
+
+### 起動オプション
+```
+Arguments:
+  [<models> ...]    Model configuration URLs to load
+
+Flags:
+  -h, --help                   Show context-sensitive help.
+      --log-level=LOG-LEVEL    Set the level of logs to output
+                               [error,warn,info,debug,trace]
+                               ($LOCALAI_LOG_LEVEL)
+
+storage
+  --models-path="/build/models"    Path containing models used for inferencing
+                                   ($LOCALAI_MODELS_PATH, $MODELS_PATH)
+  --backend-assets-path="/tmp/localai/backend_data"
+                                   Path used to extract libraries that are
+                                   required by some of the backends in
+                                   runtime ($LOCALAI_BACKEND_ASSETS_PATH,
+                                   $BACKEND_ASSETS_PATH)
+  --image-path="/tmp/generated/images"
+                                   Location for images generated by backends
+                                   (e.g. stablediffusion) ($LOCALAI_IMAGE_PATH,
+                                   $IMAGE_PATH)
+  --audio-path="/tmp/generated/audio"
+                                   Location for audio generated by backends
+                                   (e.g. piper) ($LOCALAI_AUDIO_PATH,
+                                   $AUDIO_PATH)
+  --upload-path="/tmp/localai/upload"
+                                   Path to store uploads from files api
+                                   ($LOCALAI_UPLOAD_PATH, $UPLOAD_PATH)
+  --config-path="/tmp/localai/config"
+                                   ($LOCALAI_CONFIG_PATH, $CONFIG_PATH)
+  --localai-config-dir="/build/configuration"
+                                   Directory for dynamic loading of
+                                   certain configuration files (currently
+                                   api_keys.json and external_backends.json)
+                                   ($LOCALAI_CONFIG_DIR)
+  --localai-config-dir-poll-interval=DURATION
+                                   Typically the config path picks up changes
+                                   automatically, but if your system has broken
+                                   fsnotify events, set this to an interval
+                                   to poll the LocalAI Config Dir (example:
+                                   1m) ($LOCALAI_CONFIG_DIR_POLL_INTERVAL)
+  --models-config-file=STRING      YAML file containing a list of model backend
+                                   configs ($LOCALAI_MODELS_CONFIG_FILE,
+                                   $CONFIG_FILE)
+
+models
+  --galleries="[{\"name\":\"localai\", \"url\":\"github:mudler/LocalAI/gallery/index.yaml@master\"}]"
+                             JSON list of galleries ($LOCALAI_GALLERIES,
+                             $GALLERIES)
+  --autoload-galleries       ($LOCALAI_AUTOLOAD_GALLERIES, $AUTOLOAD_GALLERIES)
+  --remote-library="https://raw.githubusercontent.com/mudler/LocalAI/master/embedded/model_library.yaml"
+                             A LocalAI remote library URL
+                             ($LOCALAI_REMOTE_LIBRARY, $REMOTE_LIBRARY)
+  --preload-models=STRING    A List of models to apply in JSON at start
+                             ($LOCALAI_PRELOAD_MODELS, $PRELOAD_MODELS)
+  --models=MODELS,...        A List of model configuration URLs to load
+                             ($LOCALAI_MODELS, $MODELS)
+  --preload-models-config=STRING
+                             A List of models to apply at startup. Path to a
+                             YAML config file ($LOCALAI_PRELOAD_MODELS_CONFIG,
+                             $PRELOAD_MODELS_CONFIG)
+
+performance
+      --f16                 Enable GPU acceleration ($LOCALAI_F16, $F16)
+  -t, --threads=4           Number of threads used for parallel computation.
+                            Usage of the number of physical cores in the system
+                            is suggested ($LOCALAI_THREADS, $THREADS)
+      --context-size=512    Default context size for models
+                            ($LOCALAI_CONTEXT_SIZE, $CONTEXT_SIZE)
+
+api
+  --address=":8080"              Bind address for the API server
+                                 ($LOCALAI_ADDRESS, $ADDRESS)
+  --cors                         ($LOCALAI_CORS, $CORS)
+  --cors-allow-origins=STRING    ($LOCALAI_CORS_ALLOW_ORIGINS,
+                                 $CORS_ALLOW_ORIGINS)
+  --upload-limit=15              Default upload-limit in MB
+                                 ($LOCALAI_UPLOAD_LIMIT, $UPLOAD_LIMIT)
+  --api-keys=API-KEYS,...        List of API Keys to enable API authentication.
+                                 When this is set, all the requests must be
+                                 authenticated with one of these API keys
+                                 ($LOCALAI_API_KEY, $API_KEY)
+  --disable-web-ui               Disable webui ($LOCALAI_DISABLE_WEBUI,
+                                 $DISABLE_WEBUI)
+
+backends
+  --parallel-requests              Enable backends to handle multiple
+                                   requests in parallel if they
+                                   support it (e.g.: llama.cpp or
+                                   vllm) ($LOCALAI_PARALLEL_REQUESTS,
+                                   $PARALLEL_REQUESTS)
+  --single-active-backend          Allow only one backend to be run at a
+                                   time ($LOCALAI_SINGLE_ACTIVE_BACKEND,
+                                   $SINGLE_ACTIVE_BACKEND)
+  --preload-backend-only           Do not launch the API services,
+                                   only the preloaded models / backends
+                                   are started (useful for multi-node
+                                   setups) ($LOCALAI_PRELOAD_BACKEND_ONLY,
+                                   $PRELOAD_BACKEND_ONLY)
+  --external-grpc-backends=EXTERNAL-GRPC-BACKENDS,...
+                                   A list of external grpc backends
+                                   ($LOCALAI_EXTERNAL_GRPC_BACKENDS,
+                                   $EXTERNAL_GRPC_BACKENDS)
+  --enable-watchdog-idle           Enable watchdog for stopping
+                                   backends that are idle longer
+                                   than the watchdog-idle-timeout
+                                   ($LOCALAI_WATCHDOG_IDLE, $WATCHDOG_IDLE)
+  --watchdog-idle-timeout="15m"    Threshold beyond which an idle backend should
+                                   be stopped ($LOCALAI_WATCHDOG_IDLE_TIMEOUT,
+                                   $WATCHDOG_IDLE_TIMEOUT)
+  --enable-watchdog-busy           Enable watchdog for stopping
+                                   backends that are busy longer
+                                   than the watchdog-busy-timeout
+                                   ($LOCALAI_WATCHDOG_BUSY, $WATCHDOG_BUSY)
+  --watchdog-busy-timeout="5m"     Threshold beyond which a busy backend should
+                                   be stopped ($LOCALAI_WATCHDOG_BUSY_TIMEOUT,
+                                   $WATCHDOG_BUSY_TIMEOUT)
+```
+
+<hr>
+
+LLM実行委員会
