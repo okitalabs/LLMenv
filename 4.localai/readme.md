@@ -138,13 +138,13 @@ $ docker run --rm -p 40080:40080 --gpus all -v /home/llm/localai:/localai -h loc
 
 ## 起動後の確認
 ### Embeddings
-curlで`vicuna-13b`にEmbeddingsを問い合わせてみる。
+curlで`sentence-luke`にEmbeddingsを問い合わせてみる。
 ```bash
 $ time curl http://localhost:40080/v1/embeddings \
 -H "Content-Type: application/json" \
 -H "Authorization: Bearer None" \
 -d '{
-  "model": "vicuna-13b",
+  "model": "sentence-luke",
   "input": "query: 夕飯はお肉です。"
 }' | jq |less
 ```
