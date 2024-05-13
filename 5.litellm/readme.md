@@ -79,9 +79,9 @@ model_list:
       api_base: http://host.docker.internal:40080/v1
       api_key: None
 ```
-> - LiteLLM ProxyをDockerで起動すると、バックエンドのランタイムサーバとの通信がlocalhostでは出来ないため、Dockerの起動オプションに`--add-host=host.docker.internal:host-gateway`を付けて、サーバIPを`host.docker.internal`ことで、ホストOS側のPortにアクセスし、バックエンドサーバと通信する。  
+> - LiteLLM ProxyをDockerで起動すると、バックエンドのランタイムサーバとの通信がlocalhostでは出来ないため、Dockerの起動オプションに`--add-host=host.docker.internal:host-gateway`を付けて、サーバIPを`host.docker.internal`にすることで、ホストOS側のPortにアクセスし、バックエンドサーバと通信する。  
 
-> - `model: openai/vicuna-13b`の`openai/`はランタイム側のAPIがOpenAI APIサーバの場合、model名の前に付ける。
+> - `model: openai/vicuna-13b`の`openai/`はランタイム側のAPIがOpenAI API互換の場合、model名の前に`openai/`付ける。
 
 
 

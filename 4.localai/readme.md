@@ -7,7 +7,7 @@ LocalAIはOpenAI API互換サーバーとしてさまざまなランタイムを
 
 [LocalAI Documentationページ](https://localai.io/)
 
-> LLMのモデルが変わるとEmbeddingsのベクトルも変わるため、Chat CompletionのLLMとEmbeddingsは分けたほうが良い。また、GPT系よりBERT系の方がEmbeddingsの性能が高い（と言われている）。ただし、BERT系のモデルのコンテキスト長は512がほとんどのため、それ以上の長さが必要な場合は、GPT系のEmbeddingsを使う必要がある（RAGのチャンクではあまり長いとベクトルに多くの要素を含んでしまい精度が落ちるためは512以下が良いとされている）。
+> LLMのモデルが変わるとEmbeddingsのベクトルも変わるため、CompletionのLLMとEmbeddingsは分けたほうが良い。また、GPT系よりBERT系の方がEmbeddingsの性能が高い（と言われている）。ただし、BERT系のモデルのコンテキスト長は512がほとんどのため、それ以上の長さが必要な場合は、GPT系のEmbeddingsを使う必要がある（RAGのチャンクではあまり長いとベクトルに多くの要素を含んでしまい精度が落ちるためは512以下が良いとされている）。
 
 
 ## 構成情報
@@ -78,6 +78,7 @@ $ docker build -t localai . ## ビルド
 
 
 ### Dockerイメージの確認
+LocalAIはさまざまなランタイムの実行環境を含むため、かなり大きなサイズになる。
 ```bash
 $ docker images	
 REPOSITORY                TAG           IMAGE ID       CREATED      SIZE
@@ -112,7 +113,9 @@ localai                   latest        e48a95d81fbf   3 days ago   37GB
     - model
         モデルファイルを指定。
 
-> 複数モデルを指定することも出来るが、一旦起動するとそのまま起動しっぱなしになるため、GPUメモリの消費が多くなる。メモリ不足にならないように。
+> 複数モデルを指定することも可能だが、一旦起動するとそのまま起動しっぱなしになるため、GPUメモリ不足にならないように注意。
+
+> `model:`にHuggingFaceのモデル名（`intfloat/multilingual-e5-large`とか）を書くと、実際にアクセスが来た時点でダウンロードを開始、実行することも可能。
 
 ### 起動
 ```bash

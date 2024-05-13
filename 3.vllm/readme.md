@@ -1,7 +1,7 @@
 # LLM実行環境の構築
 # llama-cpp-python
 vLLMはHuggingFaceモデルの16bit、及び量子化GPTQ、AWQ形式のLLMモデルを実行するためのランタイム。
-同梱している`vllm.entrypoints.openai.api_server`を使用すると、OpenAI API互換サーバーとして、実行することが出来る。  
+同梱している`vllm.entrypoints.openai.api_server`を使用すると、OpenAI API互換サーバーとして実行することが出来る。  
 `Continous Batching`による複数リクエストの並列処理が可能。  
 
 [vLLM Documentationページ](https://docs.vllm.ai/en/latest/index.html)
@@ -121,7 +121,7 @@ INFO 05-12 12:11:25 metrics.py:334] Avg prompt throughput: 0.0 tokens/s, Avg gen
 
 
 ### Prompt Template
-モデルファイルに定義されているchat templateを使用する。  
+モデルファイルにchat templateが定義されていれば自動的にそれを使用する。  
 独自に定義したい場合、以下のような`.jinja`ファイルで定義し、` --chat-template`オプションで指定する。
 
 #### vicuna.jinjaの例

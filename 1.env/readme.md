@@ -53,8 +53,7 @@ LLMの実行エンジンは動作に必要なライブラリのバージョン�
 |Engine|Model name|Model|
 |:----|:----|:----|
 |llama-cpp-python|vicuna-13b|vicuna-13b-v1.5.Q8_0.gguf|
-| |swallow-8x7b|aixsatoshi-Swallow-MX-8x7b-NVE-chatvector-Mixtral-instruct-v2-q6_K.gguf|
-| |karakuri-70b|karakuri-lm-70b-chat-v0.1-q4_K_M.gguf|
+| |karakuri-8x7b|karakuri-lm-8x7b-chat-v0.1-gguf|
 |vLLM|karakuri-70b|karakuri-lm-70b-chat-v0.1-AWQ|
 |LocalAI|sentence-luke|sentence-luke-japanese-base-lite|
 
@@ -75,7 +74,7 @@ LLMの実行エンジンは動作に必要なライブラリのバージョン�
 ## ユーザ環境作成
 
 ### ユーザ追加
-ユーザアカウント作成と権限を付与する
+ユーザアカウント作成と権限を付与する。ユーザ名は`llm`とする。
 ```bash
 $ sudo groupadd -g 10002 llm
 sudo useradd --uid 10002 --gid 10002 --shell /bin/bash --create-home --home-dir /home/llm llm
@@ -104,7 +103,7 @@ pip install ipywidgets iprogress
 ```
 
 #### Jupyterの起動
-Port `8888`、token `llm`でJupyterを起動。
+Port `8888`、token `llm`でJupyterを起動する例。
 ```bash
 ## フォアグラウンド起動	
 $ jupyter-lab --no-browser --port=8888 --ip=0.0.0.0 --allow-root --NotebookApp.token="llm"
