@@ -19,7 +19,8 @@ SentenceTransformer(Embeddings)をOpenAI互換サーバーとして起動する�
 ## [5. LiteLLM](5.litellm/)
 OpenAI互換プロキシとしてEndpointを一元化し、モデル名から該当サーバへ処理を割り振る手順。
 
-
+## [6. GPTQ変換](6.gptq/)
+Vicuna-13b-1.5の16bitモデルをGPTQ 8bitに変換する手順。
 <hr>
 
 LLM実行委員会
