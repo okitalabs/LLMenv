@@ -128,11 +128,11 @@ INFO 05-12 12:11:25 metrics.py:334] Avg prompt throughput: 0.0 tokens/s, Avg gen
 ```jinja
 {% for message in messages %}
     {% if (message['role'] == 'system') %}
-        {{ 'Below is an instruction that describes a task. Write a response that appropriately completes the request.' + message['content'] }}
+        {{ 'A chat between a human and an assistant. ' + message['content'] }}
     {% elif (message['role'] == 'user') %}
-        {{ '### Instruction: ' + message['content'] }}
+        {{ '### Human: ' + message['content'] }}
     {% elif (message['role'] == 'assistant') %}
-        {{ '### Response: ' + message['content'] }}
+        {{ '### Assistant: ' + message['content'] }}
     {% endif %}
 {% endfor %}
 {% if add_generation_prompt and messages[-1]['role'] != 'assistant' %}
