@@ -78,19 +78,19 @@ root@vllm:/vllm-workspace#
 GPTQ変換に必要。
 ```
 root@vllm:/vllm-workspace# cd /vllm ## 作業ディレクトリに移動しておく
-root@vllm:/vllm# pip install pip install pip install auto-gptq 
+root@vllm:/vllm# pip install auto-gptq 
 ```
 Jupyterを使う場合に必要。  
 Jupyterの起動後、Hostから`http://localhost:38888`、Token`llm`で接続。
 ```
-root@vllm:/vllm# pip install pip install ipywidgets iprogress jupyterLab
+root@vllm:/vllm# pip install ipywidgets iprogress jupyterLab
 root@vllm:/vllm# jupyter-lab --no-browser --port=8888 --ip=0.0.0.0 --allow-root --NotebookApp.token="llm"
 ```
 
 ### 変換の実行
 以下のPythonプログラムをコマンドまたはJupyterから実行する。  
 
-GPTQConfigの`bits=`で量子化ビット数を、  `dataset=`でキャリブレーション用のデータセットを指定する。 'wikitext2','c4','c4-new','ptb','ptb-new'の5種類から選ぶことが推奨されている。
+GPTQConfigの`bits=`で量子化ビット数を、  `dataset=`でキャリブレーション用のデータセットを指定する。 データセットは'wikitext2','c4','c4-new','ptb','ptb-new'から選ぶことが推奨されている。
 
 ```python
 import torch
@@ -166,7 +166,7 @@ vLLMはvicuna形式のプロンプトをサポートしていないため、別�
 ```
 
 ### vLLMの起動
-`-chat-template`でプロンプトテンプレートファイルを指定する。
+`--chat-template`でプロンプトテンプレートファイルを指定する。
 ```
 root@vllm:/vllm# python3 -m vllm.entrypoints.openai.api_server \
 --model /vllm/model/vicuna-13b-gptq-8bit \
