@@ -93,8 +93,9 @@ root@vllm:/vllm# jupyter-lab --no-browser --port=8888 --ip=0.0.0.0 --allow-root 
 GPTQConfigの`bits=`で量子化ビット数を、  `dataset=`でキャリブレーション用のデータセットを指定する。 データセットは'wikitext2','c4','c4-new','ptb','ptb-new'から選ぶことが推奨されている。
 
 ```python
-import torch
+import torch, time
 from transformers import AutoModelForCausalLM, AutoTokenizer, GPTQConfig
+stime = time.perf_counter() ## 開始時間
 
 model_name = "/vllm/model/vicuna-13b-v1.5" ## 量子化するモデル
 save_file = "/vllm/model/vicuna-13b-gptq-8bit" ## 量子化済みのモデル保存先
@@ -120,11 +121,14 @@ torch_dtype=torch.float16, quantization_config=gptq_config)
 ## 指定しないとエラーになる
 model.generation_config.temperature=None
 model.generation_config.top_p=None
+model.generation_config.max_length=None
 
 ## safetensors形式で保存
 model.to('cpu')
 model.save_pretrained(save_file, safe_serialization=True)
 tokenizer.save_pretrained(save_file)
+
+print('time:', time.perf_counter() - stime) ##　処理時間
 ```
 
 ### 変換モデルの確認
@@ -137,6 +141,7 @@ model-00001-of-00003.safetensors  special_tokens_map.json
 model-00002-of-00003.safetensors  tokenizer.json
 ```
 
+> 処理時間はL40sで30分程度、GPU使用メモリは44GB程度必要
 
 <br>
 <hr>
