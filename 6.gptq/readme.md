@@ -103,8 +103,8 @@ tokenizer = AutoTokenizer.from_pretrained(model_name)
 
 ## GPTQ設定
 gptq_config = GPTQConfig(
-bits=8, ## 8bitを指定
-dataset='c4-new', ## キャリブレーションデータセット 'wikitext2','c4','c4-new','ptb','ptb-new'
+bits=8, ## 量子化ビット数、Only support quantization to [2,3,4,8] bits
+dataset='c4-new', ## キャリブレーションデータセット ['wikitext2','c4','c4-new','ptb','ptb-new'] 'wikitext2','c4','c4-new','ptb','ptb-new'
 tokenizer=tokenizer,
 use_exllama=False,
 cache_examples_on_gpu=False,
@@ -115,21 +115,27 @@ use_cuda_fp16=True
 my_device_map = {'model.embed_tokens': 'cpu', 'model.layers': 'cpu', 'model.norm': 'cpu', 'lm_head': 'cpu'}
 
 ## 量子化
+## Auto-GPTQがGPTQConfigの設定に従ってモデルを読み込んでくれる
 model = AutoModelForCausalLM.from_pretrained(model_name, device_map=my_device_map,
 torch_dtype=torch.float16, quantization_config=gptq_config)
 
-## 指定しないとエラーになる
-model.generation_config.temperature=None
-model.generation_config.top_p=None
-model.generation_config.max_length=None
+## Vicunaは元のgeneration_configに不要なパラメータがある
+## この設定があると保存できないので、Noneにするる
+quantized_model.generation_config.temperature=None
+quantized_model.generation_config.top_p=None
+quantized_model.generation_config.max_length=None
 
 ## safetensors形式で保存
-model.to('cpu')
-model.save_pretrained(save_file, safe_serialization=True)
+quantized_model.to('cpu')
+quantized_model.save_pretrained(save_file, safe_serialization=True)
 tokenizer.save_pretrained(save_file)
 
 print('time:', time.perf_counter() - stime) ##　処理時間
 ```
+
+> 処理時間はL40sで30分程度、GPU使用メモリは44GB程度必要。  
+> GPUメモリが足りない場合、後述の「## CPUオフロードによる変換」を参照。
+
 
 ### 変換モデルの確認
 以下のファイルが作成される。
@@ -141,7 +147,6 @@ model-00001-of-00003.safetensors  special_tokens_map.json
 model-00002-of-00003.safetensors  tokenizer.json
 ```
 
-> 処理時間はL40sで30分程度、GPU使用メモリは44GB程度必要
 
 <br>
 <hr>
@@ -203,6 +208,71 @@ $ time curl http://localhost:30080/v1/chat/completions \
 <br>
 <hr>
 
+## CPUオフロードによる変換
+GPUメモリが足りない場合、CPUのメモリも使用して変換する。
+
+```python
+import os, time
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer, GPTQConfig, AutoConfig
+from accelerate import init_empty_weights, infer_auto_device_map
+
+stime = time.perf_counter() ## 計測開始
+
+model_name = "/vllm/model/vicuna-13b-v1.5" ## 量子化するモデル
+save_dir = "/vllm/model/vicuna-13b-gptq-8bit-cpu" ## 量子化済みのモデル保存先
+
+
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+config = AutoConfig.from_pretrained(model_name)
+
+with init_empty_weights():
+    model = AutoModelForCausalLM.from_config(config)
+
+my_device_map = infer_auto_device_map(
+	model,
+	max_memory={0:"16GiB", "cpu":"128GiB"}, ## GPU, CPUのメモリ量を指定
+	dtype=torch.float16
+)
+
+gptq_config = GPTQConfig(
+    bits=8,	## 量子化ビット数、Only support quantization to [2,3,4,8] bits
+    dataset="c4-new", ## キャリブレーションデータセット ['wikitext2','c4','c4-new','ptb','ptb-new']
+    tokenizer=tokenizer,
+    use_exllama=False, 
+    cache_examples_on_gpu=False, 
+    use_cuda_fp16=True 
+)
+
+## Auto-GPTQがGPTQConfigの設定に従ってモデルを読み込んでくれる
+quantized_model = AutoModelForCausalLM.from_pretrained(
+	model_name, 
+	torch_dtype=torch.float16, 
+	do_sample=True, 
+	quantization_config=gptq_config
+) 
+
+## 変換終了
+print('conv Time:', time.perf_counter() - stime) ## 計測終了
+
+## Vicunaは元のgeneration_configに不要なパラメータがある
+## この設定があると保存できないので、Noneにする
+quantized_model.generation_config.temperature=None
+quantized_model.generation_config.top_p=None
+quantized_model.generation_config.max_length=None
+
+## quantized_modelの保存
+quantized_model.to('cpu') ## 全てCPUメモリに移す
+quantized_model.save_pretrained(save_dir, safe_serialization=True) ## safetensors形式で保存
+tokenizer.save_pretrained(save_dir)
+
+print('Total Time:', time.perf_counter() - stime) ## 計測終了
+```
+処理時間は1891秒、GPUメモリは15982MiB
+
+<br>
+<hr>
+
 
 ## 参考
 ### リンク
@@ -211,7 +281,7 @@ $ time curl http://localhost:30080/v1/chat/completions \
 - [NVIDIA RTX3060(12GB)でLLMを試す：GPTQ量子化](https://zenn.dev/to2watt/articles/e98cbb5c3231ab)
 - [キャリブレーションデータにもっと気を配ろうの話](https://note.com/sakusakumura/n/n7d7abca9b2e4)
 - [transformers/utils/quantization_config.py](https://github.com/huggingface/transformers/blob/main/src/transformers/utils/quantization_config.py)
-
+- [gpt-neox-20b を 3090 x 2 で動かすメモ(3090 x 1 でも動く!)](https://qiita.com/syoyo/items/ba2c25a573ab8e338cd5)
 
 <hr>
 
