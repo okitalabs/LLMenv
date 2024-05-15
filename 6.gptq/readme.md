@@ -133,7 +133,7 @@ tokenizer.save_pretrained(save_file)
 print('time:', time.perf_counter() - stime) ##　処理時間
 ```
 
-> 処理時間はL40sで２５分程度、GPU使用メモリは44GB程度必要。  
+> 処理時間はL40sで20分程度、GPU使用メモリは44GB程度必要。  
 > GPUメモリが足りない場合、後述の「CPUオフロードによる変換」を参照。
 
 
