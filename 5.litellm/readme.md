@@ -128,7 +128,7 @@ LiteLLM Proxyでは、以下のようなログが表示され内容が確認で�
 ### Embeddings
 バックエンドのLocalAIを起動し、`text-embedding-ada-002`でアクセスできるか確認。
 ```
-$time curl http://localhost:0080/v1/embeddings \
+$time curl http://localhost:10080/v1/embeddings \
 -H "Content-Type: application/json" \
 -H "Authorization: Bearer None" \
 -d '{
