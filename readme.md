@@ -21,6 +21,10 @@ OpenAI互換プロキシとしてEndpointを一元化し、モデル名から該
 
 ## [6. GPTQ変換](6.gptq/)
 Vicuna-13b-1.5の16bitモデルをGPTQ 8bitに変換する手順。
+
+## [7. LocalAI + llama-cpp](7.loalai_llamacpp/)
+LocalAI経由でllama-cppを起動して、GGUFのモデルを実行するための手順。llama-cppのContinuous Batchによる同時処理が可能。
+
 <hr>
 
 LLM実行委員会
