@@ -38,7 +38,7 @@ $ vi .env
 
 llama-cppがGPUを使用し、並列処理が可能になるように`.env`を変更しビルドする。  各項目の概要は`.env`のコメントを参照。
 
-`~/$HOME/LocalAI/.env`
+`$HOME/LocalAI/.env`
 ```bash
 LOCALAI_THREADS=8
 LOCALAI_LOG_LEVEL=debug
@@ -157,9 +157,7 @@ localai run  \
 
 ## 実行の確認
 curlでmodel名を`vicuna-13b`、`karakuri-8x7b`、`karakuri-70b`に変えて実行してみる。この時サーバ側ではモデルの入れ替えが起きる。    
-
 また、同じモデルに複数同時問い合わせを行って、ほぼ同時にレスポンスが返るか確認する(Continuous Batchによる同時処理)。  
-
 違うモデルに同時に問い合わせた場合、どちらかが`{"error":{"code":500,"message":"could not load model: rpc error: code = Canceled desc = ","type":""}}`のエラーになった。
 ```bash
 $ time curl http://localhost:40080/v1/chat/completions \
