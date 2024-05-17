@@ -11,7 +11,7 @@
 GGUF形式のLLMをOpenAI互換サーバーとして起動する手順。複数のモデルを切り替えて起動することが可能。
 
 ## [3. vLLM](3.vllm/)
-16bit、GPTQ、AWQ形式のLLMをOpenAI互換サーバーとして起動する手順。Continuous Batchによる同時処理、Embeddigsが可能。
+16bit、GPTQ、AWQ形式のLLMをOpenAI互換サーバーとして起動する手順。Continuous Batchによる同時処理が可能だが、Embeddingsは不可。
 
 ## [4. LocalAI](4.localai/)
 SentenceTransformer(Embeddings)をOpenAI互換サーバーとして起動する手順。
