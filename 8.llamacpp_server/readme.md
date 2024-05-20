@@ -25,14 +25,31 @@ Docker `llammacpp-server`を作成する、以下の設定を使用する。
 
 # 構築手順
 ## Dockerイメージの作成
-[ggerganov/llama.cpp](https://github.com/ggerganov/llama.cpp)のGitHubにある、[.devops/main-cuda.Dockerfile](https://github.com/ggerganov/llama.cpp/blob/master/.devops/main-cuda.Dockerfile)から実行用のコンテナイメージ `llamacpp-server`を作成する。  
+[ggerganov/llama.cpp](https://github.com/ggerganov/llama.cpp)のGitHubにある、[.devops/main-cuda.Dockerfile](https://github.com/ggerganov/llama.cpp/blob/master/.devops/main-cuda.Dockerfile)をserver用に修正し、実行用のコンテナイメージ `llamacpp-server`を作成する。    
 
-
+Dockerfileのコピー
 ```bash
 $ cd $HOME/llamacpp 
 $ git clone https://github.com/ggerganov/llama.cpp.git
 $ cd llama.cpp
 $ cp .devops/main-cuda.Dockerfile Dockerfile
+```
+Dockerfileの最後を以下に修正する(mainをserverに変える)。
+```
+ :
+# Enable CUDA
+ENV LLAMA_CUDA=1
+
+RUN make server
+
+FROM ${BASE_CUDA_RUN_CONTAINER} as runtime
+
+COPY --from=build /app/server /server
+
+ENTRYPOINT [ "/server" ]
+```
+ビルドする。
+```
 $ docker build -t llamacpp-server .
 ```
 
