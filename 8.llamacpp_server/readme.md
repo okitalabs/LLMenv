@@ -30,7 +30,7 @@ Docker `llammacpp-server`を作成する、以下の設定を使用する。
 
 ```bash
 $ cd $HOME/llamacpp 
-$ git https://github.com/ggerganov/llama.cpp.git
+$ git clone https://github.com/ggerganov/llama.cpp.git
 $ cd llama.cpp
 $ cp .devops/main-cuda.Dockerfile Dockerfile
 $ docker build -t llamacpp-server .
