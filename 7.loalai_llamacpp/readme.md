@@ -106,9 +106,9 @@ yamlの設定項目は、[Advanced configuration with YAML files](https://locala
     top_p: 0.7
     seed: -1
   template:
-    chat: -
+    chat: |
       [INST] {{.Input}} [/INST]
-    completion: -
+    completion: |
       [INST] {{.Input}} [/INST]
 
 - name: karakuri-70b
