@@ -1,8 +1,7 @@
 # LLM実行環境の構築
-# llama-cpp-python
 vLLMはHuggingFaceモデルの16bit、及び量子化GPTQ、AWQ形式のLLMモデルを実行するためのランタイム。
-同梱している`vllm.entrypoints.openai.api_server`を使用すると、OpenAI API互換サーバーとして実行することが出来る。  
-`Continous Batching`による複数リクエストの並列処理が可能。  
+同梱している`vllm.entrypoints.openai.api_server`を使用すると、OpenAI API互換サーバーとして実行することが出来る。
+`Continous Batching`による複数リクエストの並列処理が可能。
 
 [vLLM Documentationページ](https://docs.vllm.ai/en/latest/index.html)
 
@@ -64,7 +63,7 @@ $ python dl_karakuri-70b.py
 [vllm-project/vllm](https://github.com/vllm-project/vllm)のGitHubにある、[Dockerfile](https://github.com/vllm-project/vllm/blob/main/Dockerfile)から実行用のコンテナイメージ `vllm`を作成する。
 ```bash
 $ cd $HOME/vllm ## vllmディレクトリに移動
-$ git clone https://github.com/vllm-project/vllm 
+$ git clone https://github.com/vllm-project/vllm
 $ cd vllm
 $ docker build -t vllm . ## ビルド
 ```
@@ -72,9 +71,9 @@ $ docker build -t vllm . ## ビルド
 
 ### Dockerイメージの確認
 ```bash
-$ docker images	
+$ docker images
  REPOSITORY   TAG       IMAGE ID       CREATED         SIZE
-llamacpp 
+llamacpp
 vllm                      latest        7d4aab0485ae   3 days ago   8.29GB
 ```
 
@@ -97,7 +96,7 @@ $ docker run --rm -p 30080:30080 --gpus all -v /home/llm/vllm:/vllm -h vllm --na
 --host 0.0.0.0 \
 --port 30080
 ```
-起動後、フォアグラウンドで実行。以下メッセージが出たら起動完了。  
+起動後、フォアグラウンドで実行。以下メッセージが出たら起動完了。
 `CTRL+C`で終了、Dockerもコンテナも削除される(`--rm`オプション)。
 ```bash
  :
@@ -108,20 +107,20 @@ INFO:     Uvicorn running on http://0.0.0.0:30080 (Press CTRL+C to quit)
 INFO 05-12 12:11:25 metrics.py:334] Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 0 reqs, Swapped: 0 reqs, Pending: 0 reqs, GPU KV cache usage: 0.0%, CPU KV cache usage: 0.0%
 ```
 
-起動オプションの詳細は末尾の「参考」を参照  
-- --served-model-name  
+起動オプションの詳細は末尾の「参考」を参照
+- --served-model-name
     OpenAI APIの`model`で指定される名前。`gpt-3.5-turbo`や`text-davinch-003`のように指定することも出来る。
-- --quantization  
+- --quantization
     量子化方式（GPTQ、AWQ）
-- --max-model-len  
+- --max-model-len
     コンテキスト長、4096だとエラーになるため少な目に
-- --gpu-memory-utilization  
+- --gpu-memory-utilization
     使用するGPUのメモリ量の割合（デフォルト0.9で90%確保）
 
 
 
 ### Prompt Template
-モデルファイルにchat templateが定義されていれば自動的にそれを使用する。  
+モデルファイルにchat templateが定義されていれば自動的にそれを使用する。
 独自に定義したい場合、以下のような`.jinja`ファイルで定義し、` --chat-template`オプションで指定する。
 
 #### vicuna.jinjaの例
